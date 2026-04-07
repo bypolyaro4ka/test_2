@@ -1,0 +1,9 @@
+{
+  "model": "random_forest",
+  "MSE": 29.49,
+  "RMSE": 5.43,
+  "MAE": 3.71,
+  "R2": 0.8855,
+  "display_name": "Random Forest",
+  "type": "classic"
+}

@@ -1,0 +1,13 @@
+{
+  "model": "nn_regularized",
+  "MSE": 33.55,
+  "RMSE": 5.79,
+  "MAE": 4.26,
+  "R2": 0.8698,
+  "display_name": "Лассо/гребневая регрессия NN",
+  "type": "neural_network",
+  "replaces": "Лассо/гребневая регрессия",
+  "architecture": "Input(8) -> Dense(128, ReLU, L2=0.001) -> Dense(64, ReLU, L2=0.001) -> Dense(1)",
+  "epochs": 200,
+  "params": 9473
+}

@@ -1,0 +1,13 @@
+{
+  "model": "nn_simple",
+  "MSE": 48.21,
+  "RMSE": 6.94,
+  "MAE": 5.35,
+  "R2": 0.8129,
+  "display_name": "Линейная регрессия NN",
+  "type": "neural_network",
+  "replaces": "Линейная регрессия",
+  "architecture": "Input(8) -> Dense(64, ReLU) -> Dense(1)",
+  "epochs": 200,
+  "params": 641
+}

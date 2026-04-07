@@ -1,0 +1,13 @@
+{
+  "model": "nn_deep",
+  "MSE": 36.55,
+  "RMSE": 6.05,
+  "MAE": 4.3,
+  "R2": 0.8582,
+  "display_name": "Random Forest NN",
+  "type": "neural_network",
+  "replaces": "Random Forest Regressor",
+  "architecture": "Input(8) -> Dense(256, ReLU) -> Dropout(0.2) -> Dense(128, ReLU) -> Dropout(0.2) -> Dense(64, ReLU) -> Dense(1)",
+  "epochs": 200,
+  "params": 43521
+}

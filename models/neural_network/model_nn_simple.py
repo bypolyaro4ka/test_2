@@ -1,0 +1,108 @@
+# Модель: Простая нейронная сеть (1 скрытый слой).
+# Замена: Линейная регрессия.
+# Архитектура: Input(8) -> Dense(64, ReLU) -> Dense(1)
+# Запуск: .venv/bin/python3 models/neural_network/model_nn_simple.py
+
+
+# Импортируем все библиотеки
+import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+os.chdir(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+import json  # noqa: E402
+import numpy as np  # noqa: E402
+import matplotlib.pyplot as plt  # noqa: E402
+
+# Эта тема нужна чтобы TensorFlow не спамил в консоль все логи, а только ошибки
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+import tensorflow as tf  # noqa: E402
+from tensorflow import keras  # noqa: E402
+from tensorflow.keras import layers  # noqa: E402
+from utils import (  # noqa: E402
+    load_data, evaluate_model, save_results,
+    plot_predictions, print_metrics,
+)
+
+# Тут мы фиксируем результат, так как каждый раз при переобучении у нас будет новый результат и этими сидами мы их фиксируем
+np.random.seed(42)
+tf.random.set_seed(42)
+
+# Ну тут имена модели сколько эпох обучения у модели и сколько данных берется за раз (32)
+MODEL_NAME = 'nn_simple'
+DISPLAY_NAME = 'Линейная регрессия NN'
+EPOCHS = 200
+BATCH_SIZE = 32
+
+print("=" * 60)
+print("МОДЕЛЬ: {}".format(DISPLAY_NAME))
+print("Замена: Линейная регрессия")
+print("=" * 60)
+
+# Загрузка данных как и в обычных моделях
+data = load_data()
+X_train, X_test = data['X_train'], data['X_test']
+y_train, y_test = data['y_train'], data['y_test']
+
+# Построение модели. Один слой с ReLU — это чуть сложнее обычной линейной регрессии. Если бы не было ReLU, сеть работала бы идентично линейной регрессии (просто линейная комбинация входов). ReLU добавляет нелинейность — позволяет находить зависимости типа "если цемента больше 300 И возраст больше 28 — прочность резко растёт".
+model = keras.Sequential([ # Создаем сеть из слоев и они идут последовательно как в коде
+    layers.Input(shape=(X_train.shape[1],)), # Входной слой, ждем массив из 8 чисел (признаков бетона)
+    layers.Dense(64, activation='relu'), # Как и в прошлых моделях, работают нейроны для выявления лучших закономерностей. Это просто самая обычная 3-х слойная нейронная сеть.
+    layers.Dense(1)
+], name='Simple_NN')
+
+model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+model.summary()
+
+# Обучение
+history = model.fit(
+    X_train, y_train, # На чем учимся + правильные ответы
+    epochs=EPOCHS, batch_size=BATCH_SIZE, # Эпохи и пачки которыми мы берем данные (выше о них)
+    validation_split=0.2, verbose=0 # Забираем 20% всех данных для честного теста, что бы сеть их не видела
+)
+print("Обучение завершено за {} эпох".format(EPOCHS))
+
+# Предсказание. Прогоняем наши 20% которые мы взяли из датасета раньше, только уже без дропов, что бы работали все нейроны. На выходе получаем число.
+y_pred = model.predict(X_test, verbose=0).flatten()
+
+# Оценка. Сравниваем показатели с реальными данными и определяем точность модели.
+metrics = evaluate_model(y_test, y_pred)
+print_metrics(DISPLAY_NAME, metrics)
+
+# График обучения
+plt.figure(figsize=(10, 6))
+plt.plot(history.history['loss'], label='Обучение', linewidth=2)
+plt.plot(history.history['val_loss'], label='Валидация', linewidth=2)
+plt.xlabel('Эпоха', fontsize=12)
+plt.ylabel('Потери (MSE)', fontsize=12)
+plt.title('{}: динамика обучения'.format(DISPLAY_NAME), fontsize=14)
+plt.legend(fontsize=12)
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig(
+    'results/plots/обучение_линейная_регрессия_NN.png',
+    dpi=150, bbox_inches='tight'
+)
+plt.close()
+print("Сохранено: results/plots/обучение_линейная_регрессия_NN.png")
+
+# Сохранение истории обучения
+hist_data = {
+    k: [float(v) for v in vals]
+    for k, vals in history.history.items()
+}
+with open('results/metrics/{}_history.json'.format(MODEL_NAME), 'w') as f:
+    json.dump(hist_data, f)
+
+# Сохранение результатов
+save_results(MODEL_NAME, metrics, y_pred, extra={
+    'display_name': DISPLAY_NAME,
+    'type': 'neural_network',
+    'replaces': 'Линейная регрессия',
+    'architecture': 'Input(8) -> Dense(64, ReLU) -> Dense(1)',
+    'epochs': EPOCHS,
+    'params': int(model.count_params()),
+})
+plot_predictions(DISPLAY_NAME, y_test, y_pred, metrics, color='#EF553B')

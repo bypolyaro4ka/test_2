@@ -1,0 +1,9 @@
+{
+  "model": "ridge",
+  "MSE": 95.97,
+  "RMSE": 9.8,
+  "MAE": 7.75,
+  "R2": 0.6276,
+  "display_name": "Гребневая регрессия",
+  "type": "classic"
+}

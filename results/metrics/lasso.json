@@ -1,0 +1,9 @@
+{
+  "model": "lasso",
+  "MSE": 96.41,
+  "RMSE": 9.82,
+  "MAE": 7.82,
+  "R2": 0.6258,
+  "display_name": "Лассо-регрессия",
+  "type": "classic"
+}
