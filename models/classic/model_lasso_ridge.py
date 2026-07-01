@@ -46,7 +46,8 @@ plot_predictions(
 
 # Гребневая регрессия (Ridge)
 print("\n--- Гребневая регрессия (Ridge) ---")
-ridge = Ridge(alpha=1.0, random_state=42)
+ridge_alpha = 10.0
+ridge = Ridge(alpha=ridge_alpha, random_state=42)
 ridge.fit(X_train, y_train)
 y_pred_ridge = ridge.predict(X_test)
 
@@ -54,7 +55,11 @@ metrics_ridge = evaluate_model(y_test, y_pred_ridge)
 print_metrics('Гребневая регрессия', metrics_ridge)
 save_results(
     'ridge', metrics_ridge, y_pred_ridge,
-    extra={'display_name': 'Гребневая регрессия', 'type': 'classic'}
+    extra={
+        'display_name': 'Гребневая регрессия',
+        'type': 'classic',
+        'alpha': ridge_alpha,
+    }
 )
 plot_predictions(
     'Гребневая регрессия', y_test, y_pred_ridge,
