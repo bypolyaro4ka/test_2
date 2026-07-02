@@ -1,9 +1,9 @@
 {
   "model": "nn_simple",
-  "MSE": 48.21,
-  "RMSE": 6.94,
-  "MAE": 5.35,
-  "R2": 0.8129,
+  "MSE": 22.21,
+  "RMSE": 4.71,
+  "MAE": 3.61,
+  "R2": 0.9138,
   "display_name": "Линейная регрессия NN",
   "type": "neural_network",
   "replaces": "Линейная регрессия",

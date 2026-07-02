@@ -271,7 +271,7 @@ def _build_correlation(dataset: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def _build_distribution(dataset: pd.DataFrame, column: str) -> go.Figure:
+def _build_distribution(dataset: pd.DataFrame, column: str, height: int = 380) -> go.Figure:
     fig = go.Figure(
         go.Histogram(
             x=dataset[column],
@@ -280,9 +280,9 @@ def _build_distribution(dataset: pd.DataFrame, column: str) -> go.Figure:
             opacity=0.78,
         )
     )
-    fig.update_xaxes(title_text=column)
-    fig.update_yaxes(title_text="Частота")
-    return _layout(fig, 380, showlegend=False)
+    fig.update_xaxes(title_text=column.split(" (")[0])
+    fig.update_yaxes(title_text="Кол-во")
+    return _layout(fig, height, showlegend=False)
 
 
 def _build_dataset_scatter(dataset: pd.DataFrame, x_col: str, y_col: str, color: str) -> go.Figure:
@@ -326,6 +326,72 @@ def _build_pair_single(dataset: pd.DataFrame, col_x: str, col_y: str, color: str
     return _layout(fig, 320, showlegend=False)
 
 
+def _build_training_single(model_name: str, history: dict) -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            y=history["loss"],
+            mode="lines",
+            name="Обучение",
+            line=dict(color=CYAN, width=2),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            y=history["val_loss"],
+            mode="lines",
+            name="Валидация",
+            line=dict(color=ORANGE, width=2),
+        )
+    )
+    fig.update_xaxes(title_text="Эпоха")
+    fig.update_yaxes(title_text="MSE")
+    fig.update_layout(title=model_name)
+    return _layout(fig, 330, showlegend=True)
+
+
+def _build_training_panels(histories: dict, results: dict[str, dict]) -> str:
+    panels = []
+    for display_name, row in results.items():
+        if row.get("type") != "neural_network":
+            continue
+
+        model_key = row.get("model")
+        history = histories.get(model_key)
+        if not history:
+            continue
+
+        panels.append(
+            f"""
+            <div class="panel compact">
+              <div class="section-title small">{display_name}</div>
+              {_plot_html(_build_training_single(display_name, history))}
+            </div>
+            """
+        )
+
+    return f"""
+    <section class="panel">
+      <div class="section-title">Обучение нейронных сетей</div>
+      <div class="section-subtitle">Три графика обучения: train loss и validation loss по эпохам.</div>
+      <div class="training-grid">
+        {"".join(panels)}
+      </div>
+    </section>
+    """
+
+
+def _build_model_comparison_charts(results: dict[str, dict]) -> str:
+    return f"""
+    <section class="panel">
+      <div class="section-title">Графики сравнения всех моделей</div>
+      <div class="section-subtitle">Сравнение качества по R2 и RMSE для всех сохраненных моделей.</div>
+      {_plot_html(_build_comparison(results, "R2", "R2 Score"))}
+      {_plot_html(_build_comparison(results, "RMSE", "RMSE (MPa)"))}
+    </section>
+    """
+
+
 def _build_static_charts(results: dict[str, dict], histories: dict, dataset: pd.DataFrame) -> str:
     target = dataset.columns[-1]
     cement_col = dataset.columns[0]
@@ -334,11 +400,10 @@ def _build_static_charts(results: dict[str, dict], histories: dict, dataset: pd.
 
     pair_cards = []
     for idx, column in enumerate(dataset.columns):
-        title = (
-            f"{column.split(' (')[0]} vs Прочность"
-            if column != target
-            else f"Распределение: {column.split(' (')[0]}"
-        )
+        if column == target:
+            continue
+
+        title = f"{column.split(' (')[0]} vs Прочность"
         pair_cards.append(
             f"""
             <div class="panel compact">
@@ -375,21 +440,14 @@ def _build_static_charts(results: dict[str, dict], histories: dict, dataset: pd.
       </div>
     </div>
 
-    <div class="panel">
-      <div class="section-title">Сравнение всех моделей</div>
-      <div class="section-subtitle">Метрики по всем сохраненным моделям.</div>
-      {_plot_html(_build_comparison(results, "R2", "R2 Score"))}
-      {_plot_html(_build_comparison(results, "RMSE", "RMSE (MPa)"))}
-    </div>
-
-    <div class="panel">
-      <div class="section-title">Обучение нейронных сетей</div>
-      <div class="section-subtitle">Потери MSE по эпохам для всех нейросетевых моделей.</div>
-      {_plot_html(_build_training(histories, results))}
-    </div>
-
     <div class="pair-grid">
       {"".join(pair_cards)}
+    </div>
+
+    <div class="panel">
+      <div class="section-title">Распределение: Прочность бетона</div>
+      <div class="section-subtitle">Полноширинная гистограмма целевой переменной.</div>
+      {_plot_html(_build_distribution(dataset, target, height=420))}
     </div>
     """
 
@@ -421,6 +479,8 @@ def _build_html(
     )
 
     static_charts = _build_static_charts(results, histories, dataset)
+    model_comparison_charts = _build_model_comparison_charts(results)
+    training_charts = _build_training_panels(histories, results)
     leaderboard = _build_leaderboard(results)
 
     classic_buttons = "".join(
@@ -612,11 +672,10 @@ def _build_html(
     .grid.two {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
     .cards {{
       display: grid;
-      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 12px;
     }}
     .metric-card {{
-      min-width: 180px;
       min-height: 132px;
       padding: 18px 20px;
       border-radius: 20px;
@@ -644,11 +703,25 @@ def _build_html(
       font-size: 12px;
       line-height: 1.45;
     }}
-    .delta-grid {{
+    .architecture-grid {{
       display: grid;
-      grid-template-columns: repeat(3, minmax(160px, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
-      margin-top: 16px;
+      margin-top: 14px;
+    }}
+    .detail-card {{
+      min-height: 116px;
+      padding: 18px 20px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.008) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }}
+    .detail-value {{
+      color: var(--txt);
+      font-size: 14px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
     }}
     .table-wrap {{
       overflow: auto;
@@ -699,6 +772,12 @@ def _build_html(
     }}
     .pair-grid {{
       display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }}
+    .training-grid {{
+      display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }}
@@ -711,7 +790,21 @@ def _build_html(
       body {{ padding: 18px; }}
       .hero {{ padding: 24px; }}
       h1 {{ font-size: 34px; }}
-      .grid.two, .cards, .delta-grid, .pair-grid {{
+      .grid.two, .cards, .architecture-grid, .training-grid {{
+        grid-template-columns: 1fr;
+      }}
+      .pair-grid {{
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }}
+    }}
+    @media (max-width: 640px) {{
+      body {{ padding: 12px; }}
+      .hero, .selector, .panel {{ padding: 18px; border-radius: 20px; }}
+      h1 {{ font-size: 28px; }}
+      .section-title {{ font-size: 20px; }}
+      .section-title.small {{ font-size: 16px; }}
+      .metric-value {{ font-size: 24px; }}
+      .pair-grid {{
         grid-template-columns: 1fr;
       }}
     }}
@@ -740,47 +833,51 @@ def _build_html(
       <div class="btn-row">{classic_buttons}</div>
     </section>
 
-    <section class="selector">
-      <div class="label">Нейронные сети</div>
-      <div class="btn-row">{nn_buttons}</div>
-    </section>
+	    <section class="selector">
+	      <div class="label">Нейронные сети</div>
+	      <div class="btn-row">{nn_buttons}</div>
+	    </section>
 
-    <section class="panel">
-      <div class="section-title" id="selected-title"></div>
-      <div class="section-subtitle">Сравнение выбранных моделей.</div>
-      <div class="grid two">
-        <div>
-          <div class="section-subtitle" id="classic-title"></div>
+	    {static_charts}
+
+	    <section class="panel">
+	      <div class="section-title" id="selected-title"></div>
+	      <div class="section-subtitle">Сравнение выбранной классической модели и нейросети: метрики и архитектура.</div>
+	      <div class="grid two">
+	        <div>
+	          <div class="section-subtitle" id="classic-title"></div>
           <div class="cards" id="classic-cards"></div>
         </div>
         <div>
           <div class="section-subtitle" id="nn-title"></div>
-          <div class="cards" id="nn-cards"></div>
-        </div>
-      </div>
-      <div class="delta-grid" id="delta-cards"></div>
-    </section>
+	          <div class="cards" id="nn-cards"></div>
+	        </div>
+	      </div>
+	      <div class="architecture-grid" id="architecture-cards"></div>
+	    </section>
 
-    <section class="grid two">
-      <div class="panel">
+	    {leaderboard}
+
+	    <section class="grid two">
+	      <div class="panel">
         <div class="section-title" id="classic-scatter-title"></div>
         <div id="classic-scatter"></div>
       </div>
       <div class="panel">
         <div class="section-title" id="nn-scatter-title"></div>
         <div id="nn-scatter"></div>
-      </div>
-    </section>
+	      </div>
+	    </section>
 
-    {leaderboard}
+	    {model_comparison_charts}
 
-    <section class="panel">
-      <div class="section-title" id="prediction-title"></div>
-      <div class="section-subtitle">Первые 20 тестовых образцов: реальные vs предсказанные.</div>
-      <div class="table-wrap" id="prediction-table"></div>
-    </section>
+	    {training_charts}
 
-    {static_charts}
+	    <section class="panel">
+	      <div class="section-title" id="prediction-title"></div>
+	      <div class="section-subtitle">Первые 20 тестовых образцов: реальные vs предсказанные.</div>
+	      <div class="table-wrap" id="prediction-table"></div>
+	    </section>
 
     <div class="footer">
       Сгенерировано из локальных артефактов проекта: results/metrics,
@@ -818,6 +915,37 @@ def _build_html(
           <div class="metric-sub">${{sub || ""}}</div>
         </div>
       `;
+    }}
+
+    function detailCard(label, value, sub, color) {{
+      return `
+        <div class="detail-card">
+          <div class="metric-label">${{label}}</div>
+          <div class="detail-value" style="color:${{color}}">${{value}}</div>
+          <div class="metric-sub">${{sub || ""}}</div>
+        </div>
+      `;
+    }}
+
+    function modelDescription(row) {{
+      if (row.architecture) return row.architecture;
+      if (row.model === "linear_regression") return "LinearRegression";
+      if (row.model === "lasso") return "Lasso(alpha=0.1)";
+      if (row.model === "ridge") return `Ridge(alpha=${{row.alpha || 10.0}})`;
+      if (row.model === "random_forest") return "RandomForestRegressor(n_estimators=100)";
+      return row.model || "-";
+    }}
+
+    function architectureCards(classicRow, nnRow) {{
+      return [
+        detailCard("Классическая модель", modelDescription(classicRow), selectedClassic, COLORS.txt),
+        detailCard(
+          "Архитектура нейросети",
+          modelDescription(nnRow),
+          nnRow.params ? `${{nnRow.params.toLocaleString("ru-RU")}} параметров` : selectedNn,
+          COLORS.purple
+        ),
+      ].join("");
     }}
 
     function modelCards(row, typeLabel, color) {{
@@ -947,18 +1075,12 @@ def _build_html(
     function updateDashboard() {{
       const rc = RESULTS[selectedClassic];
       const rn = RESULTS[selectedNn];
-      const deltaR2 = rn.R2 - rc.R2;
-      const deltaRmse = rn.RMSE - rc.RMSE;
       document.getElementById("selected-title").textContent = `${{selectedClassic}} vs ${{selectedNn}}`;
       document.getElementById("classic-title").textContent = selectedClassic;
       document.getElementById("nn-title").textContent = selectedNn;
       document.getElementById("classic-cards").innerHTML = modelCards(rc, "Классика", COLORS.txt);
       document.getElementById("nn-cards").innerHTML = modelCards(rn, "НС", COLORS.orange);
-      document.getElementById("delta-cards").innerHTML = [
-        metricCard("Delta R2", `${{deltaR2 >= 0 ? "+" : ""}}${{deltaR2.toFixed(4)}}`, "НС vs Классика", deltaR2 > 0 ? COLORS.green : COLORS.red),
-        metricCard("Delta RMSE", `${{deltaRmse >= 0 ? "+" : ""}}${{deltaRmse.toFixed(2)}}`, "MPa", deltaRmse < 0 ? COLORS.green : COLORS.red),
-        metricCard("Архитектура НС", rn.architecture || "-", rn.params ? `${{rn.params.toLocaleString("ru-RU")}} параметров` : "-", COLORS.purple),
-      ].join("");
+      document.getElementById("architecture-cards").innerHTML = architectureCards(rc, rn);
       document.getElementById("classic-scatter-title").textContent =
         `${{selectedClassic}} · ${{scatterPlot("classic-scatter", selectedClassic, COLORS.txt)}}`;
       document.getElementById("nn-scatter-title").textContent =

@@ -1,9 +1,9 @@
 {
   "model": "nn_deep",
-  "MSE": 36.55,
-  "RMSE": 6.05,
-  "MAE": 4.3,
-  "R2": 0.8582,
+  "MSE": 14.53,
+  "RMSE": 3.81,
+  "MAE": 2.71,
+  "R2": 0.9436,
   "display_name": "Random Forest NN",
   "type": "neural_network",
   "replaces": "Random Forest Regressor",

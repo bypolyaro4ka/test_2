@@ -1,9 +1,9 @@
 {
   "model": "nn_regularized",
-  "MSE": 33.55,
-  "RMSE": 5.79,
-  "MAE": 4.26,
-  "R2": 0.8698,
+  "MSE": 18.71,
+  "RMSE": 4.33,
+  "MAE": 3.1,
+  "R2": 0.9274,
   "display_name": "Лассо/гребневая регрессия NN",
   "type": "neural_network",
   "replaces": "Лассо/гребневая регрессия",
