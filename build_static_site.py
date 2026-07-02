@@ -247,20 +247,28 @@ def _build_training(histories: dict, results: dict[str, dict]) -> go.Figure:
 
 def _build_correlation(dataset: pd.DataFrame) -> go.Figure:
     corr = dataset.corr(numeric_only=True)
+    labels = [column.split(" (")[0] for column in corr.columns]
     fig = go.Figure(
         go.Heatmap(
             z=corr.values,
-            x=corr.columns,
-            y=corr.columns,
-            colorscale="RdBu",
-            zmid=0,
+            x=labels,
+            y=labels,
+            colorscale="RdBu_r",
+            zmin=-1,
+            zmax=1,
             text=np.round(corr.values, 2),
             texttemplate="%{text}",
-            hovertemplate="%{x}<br>%{y}<br>corr=%{z:.2f}<extra></extra>",
+            textfont=dict(size=10, color=TXT),
+            hovertemplate="%{x} vs %{y}<br>r = %{z:.3f}<extra></extra>",
             colorbar=dict(title="corr"),
         )
     )
-    return _layout(fig, 580, showlegend=False)
+    _layout(fig, 500, showlegend=False)
+    fig.update_layout(
+        xaxis=dict(tickangle=-45),
+        margin=dict(l=120, b=120, t=40, r=28),
+    )
+    return fig
 
 
 def _build_distribution(dataset: pd.DataFrame, column: str) -> go.Figure:
@@ -767,12 +775,6 @@ def _build_html(
     {leaderboard}
 
     <section class="panel">
-      <div class="section-title">Радар сравнения</div>
-      <div class="section-subtitle">Выбранные модели рядом. Чем больше площадь, тем лучше модель.</div>
-      <div id="radar-chart"></div>
-    </section>
-
-    <section class="panel">
       <div class="section-title" id="prediction-title"></div>
       <div class="section-subtitle">Первые 20 тестовых образцов: реальные vs предсказанные.</div>
       <div class="table-wrap" id="prediction-table"></div>
@@ -909,39 +911,6 @@ def _build_html(
       return `R2 = ${{row.R2.toFixed(4)}} | RMSE = ${{row.RMSE.toFixed(2)}} MPa`;
     }}
 
-    function radarPlot() {{
-      const maxRmse = Math.max(...Object.values(RESULTS).map(row => row.RMSE));
-      const maxMae = Math.max(...Object.values(RESULTS).map(row => row.MAE));
-      const categories = ["R2", "1 - RMSE/max", "1 - MAE/max"];
-      const traces = [selectedClassic, selectedNn].map((name, idx) => {{
-        const row = RESULTS[name];
-        const values = [row.R2, 1 - row.RMSE / maxRmse, 1 - row.MAE / maxMae];
-        return {{
-          type: "scatterpolar",
-          r: [...values, values[0]],
-          theta: [...categories, categories[0]],
-          fill: "toself",
-          name,
-          opacity: 0.65,
-          line: {{color: idx === 0 ? COLORS.blue : COLORS.orange}}
-        }};
-      }});
-      const layout = baseLayout(440);
-      layout.polar = {{
-        bgcolor: COLORS.cardAlt,
-        radialaxis: {{visible: true, range: [0, 1], gridcolor: COLORS.grid, color: COLORS.txt2}},
-        angularaxis: {{gridcolor: COLORS.grid, color: COLORS.txt2}}
-      }};
-      delete layout.xaxis;
-      delete layout.yaxis;
-      Plotly.react("radar-chart", traces, layout, {{
-        displayModeBar: true,
-        responsive: true,
-        scrollZoom: false,
-        modeBarButtonsToRemove: ["toImage", "sendDataToCloud", "select2d", "lasso2d"]
-      }});
-    }}
-
     function predictionTable() {{
       const pred = PREDS[selectedNn] || [];
       let rows = "";
@@ -994,7 +963,6 @@ def _build_html(
         `${{selectedClassic}} · ${{scatterPlot("classic-scatter", selectedClassic, COLORS.txt)}}`;
       document.getElementById("nn-scatter-title").textContent =
         `${{selectedNn}} · ${{scatterPlot("nn-scatter", selectedNn, COLORS.orange)}}`;
-      radarPlot();
       predictionTable();
       updateButtons();
     }}

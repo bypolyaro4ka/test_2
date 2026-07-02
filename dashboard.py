@@ -326,47 +326,6 @@ def _build_training(nn_histories, all_results):
     return fig
 
 
-def _build_radar(all_results, selected):
-    if not selected:
-        fig = go.Figure()
-        _layout(fig, 400, showlegend=False)
-        return fig
-
-    max_rmse = max(r['RMSE'] for r in all_results.values())
-    max_mae = max(r['MAE'] for r in all_results.values())
-    categories = ['R2', '1 - RMSE/max', '1 - MAE/max']
-    colors_map = [BLUE, GREEN, RED, CYAN, PURPLE, ORANGE]
-
-    fig = go.Figure()
-    for i, name in enumerate(selected):
-        r = all_results[name]
-        vals = [
-            r['R2'],
-            1 - r['RMSE'] / max_rmse,
-            1 - r['MAE'] / max_mae,
-        ]
-        fig.add_trace(go.Scatterpolar(
-            r=vals + [vals[0]],
-            theta=categories + [categories[0]],
-            fill='toself', name=name, opacity=0.6,
-            line=dict(color=colors_map[i % len(colors_map)]),
-        ))
-    fig.update_layout(
-        polar=dict(
-            bgcolor=CARD_ALT,
-            radialaxis=dict(
-                visible=True, range=[0, 1],
-                gridcolor=GRID, color=TXT2,
-            ),
-            angularaxis=dict(
-                gridcolor=GRID, color=TXT2,
-            ),
-        ),
-    )
-    _layout(fig, 440)
-    return fig
-
-
 def _build_pred_table(y_test, y_pred, n=20):
     if y_test is None or y_pred is None:
         return html.Div("No data", style={"color": TXT2, "padding": "20px"})
@@ -761,7 +720,6 @@ app.layout = html.Div([
     }),
     html.Div(id="comparison-section", style={"marginBottom": "16px"}),
     html.Div(id="training-section", style={"marginBottom": "16px"}),
-    html.Div(id="radar-section", style={"marginBottom": "16px"}),
     html.Div(id="table-section", style={"paddingBottom": "32px"}),
 
 ], className="dashboard-shell", style={
@@ -815,7 +773,6 @@ def toggle_nn(*clicks):
      Output("scatter-section", "children"),
      Output("comparison-section", "children"),
      Output("training-section", "children"),
-     Output("radar-section", "children"),
      Output("table-section", "children")],
     [Input("sel-classic", "data"),
      Input("sel-nn", "data")],
@@ -957,21 +914,6 @@ def update_all(sel_classic, sel_nn):
         ),
         dcc.Graph(
             figure=_build_training(NN_HIST, ALL_RESULTS),
-            config=GRAPH_CFG,
-        ),
-    ], padding="22px 22px 16px")
-
-    # -- Radar --
-    radar = _panel([
-        _section_header(
-            "Радар сравнения",
-            "Выбранные модели рядом. "
-            "Чем больше площадь — тем лучше модель.",
-        ),
-        dcc.Graph(
-            figure=_build_radar(
-                ALL_RESULTS, [sel_classic, sel_nn],
-            ),
             config=GRAPH_CFG,
         ),
     ], padding="22px 22px 16px")
@@ -1121,7 +1063,6 @@ def update_all(sel_classic, sel_nn):
         scatter_children,
         comparison,
         training,
-        radar,
         table,
     )
 
