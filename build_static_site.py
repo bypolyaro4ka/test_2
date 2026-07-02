@@ -29,6 +29,7 @@ SURFACE = "rgba(8, 8, 8, 0.92)"
 CARD = "#0B0B0B"
 CARD_ALT = "#020202"
 BORDER = "rgba(255, 255, 255, 0.10)"
+BORDER_STRONG = "rgba(255, 255, 255, 0.18)"
 TXT = "#F6F7FB"
 TXT2 = "#A1A1A6"
 TXT3 = "#6E6E73"
@@ -42,10 +43,12 @@ FONT = (
     "-apple-system, BlinkMacSystemFont, 'SF Pro Display', "
     "'SF Pro Text', 'Helvetica Neue', Arial, sans-serif"
 )
+SHADOW = "0 28px 80px rgba(0, 0, 0, 0.40)"
 GRID = "rgba(255, 255, 255, 0.12)"
 
 
 def _layout(fig: go.Figure, height: int = 400, showlegend: bool = True) -> go.Figure:
+    top = 92 if showlegend else 54
     fig.update_layout(
         template="plotly_dark",
         paper_bgcolor="rgba(0,0,0,0)",
@@ -53,26 +56,38 @@ def _layout(fig: go.Figure, height: int = 400, showlegend: bool = True) -> go.Fi
         font=dict(family=FONT, color=TXT, size=12),
         colorway=[BLUE, GREEN, RED, CYAN, PURPLE, ORANGE],
         height=height,
-        margin=dict(l=56, r=24, t=58, b=56),
+        margin=dict(l=58, r=28, t=top, b=46),
         showlegend=showlegend,
         legend=dict(
             bgcolor="rgba(0,0,0,0)",
             borderwidth=0,
             orientation="h",
             yanchor="bottom",
-            y=1.04,
+            y=1.12,
             xanchor="left",
             x=0,
+            font=dict(size=10, color=TXT),
+            itemsizing="constant",
+        ),
+        hovermode="x unified",
+        hoverlabel=dict(
+            bgcolor="#0B1420",
+            bordercolor=BORDER_STRONG,
+            font=dict(family=FONT, color=TXT, size=12),
         ),
     )
     fig.update_xaxes(
         gridcolor=GRID,
+        gridwidth=1,
+        showline=False,
         zeroline=False,
         tickfont=dict(color=TXT2, size=11),
         title_font=dict(color=TXT2, size=12),
     )
     fig.update_yaxes(
         gridcolor=GRID,
+        gridwidth=1,
+        showline=False,
         zeroline=False,
         tickfont=dict(color=TXT2, size=11),
         title_font=dict(color=TXT2, size=12),
@@ -84,7 +99,17 @@ def _plot_html(fig: go.Figure) -> str:
     return fig.to_html(
         full_html=False,
         include_plotlyjs=False,
-        config={"displayModeBar": True, "responsive": True, "scrollZoom": False},
+        config={
+            "displayModeBar": True,
+            "responsive": True,
+            "scrollZoom": False,
+            "modeBarButtonsToRemove": [
+                "toImage",
+                "sendDataToCloud",
+                "select2d",
+                "lasso2d",
+            ],
+        },
     )
 
 
@@ -138,7 +163,7 @@ def _build_leaderboard(results: dict[str, dict]) -> str:
     <div class="panel">
       <div class="section-title">Лидерборд</div>
       <div class="section-subtitle">Все модели отсортированы по R2. Лучшая модель сверху.</div>
-      <div class="table-wrap">
+      <div class="table-wrap leaderboard-table">
         <table>
           <thead>
             <tr><th>Место</th><th>Модель</th><th>Тип</th><th>R2</th><th>RMSE</th><th>MAE</th><th>MSE</th></tr>
@@ -414,6 +439,7 @@ def _build_html(
       --card: {CARD};
       --card-alt: {CARD_ALT};
       --border: {BORDER};
+      --border-strong: {BORDER_STRONG};
       --txt: {TXT};
       --txt2: {TXT2};
       --txt3: {TXT3};
@@ -424,6 +450,7 @@ def _build_html(
       --purple: {PURPLE};
       --cyan: {CYAN};
       --font: {FONT};
+      --shadow: {SHADOW};
     }}
     * {{ box-sizing: border-box; }}
     html, body {{
@@ -445,7 +472,7 @@ def _build_html(
       border: 1px solid var(--border);
       border-radius: 30px;
       background: linear-gradient(135deg, rgba(18,18,18,0.98) 0%, rgba(6,6,6,0.96) 58%, rgba(0,0,0,0.99) 100%);
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.40);
+      box-shadow: var(--shadow);
       margin-bottom: 16px;
     }}
     .eyebrow {{
@@ -483,20 +510,22 @@ def _build_html(
       margin-top: 18px;
     }}
     .chip {{
-      padding: 9px 12px;
-      border-radius: 999px;
+      min-width: 148px;
+      padding: 14px 16px;
+      border-radius: 18px;
       border: 1px solid var(--border);
-      background: rgba(255,255,255,0.04);
-      color: var(--txt2);
-      font-size: 12px;
+      background: rgba(255,255,255,0.03);
+      color: var(--txt);
+      font-size: 13px;
       font-weight: 700;
+      line-height: 1.2;
     }}
     .selector {{
       padding: 18px 22px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 22px;
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.40);
+      box-shadow: var(--shadow);
       margin-bottom: 12px;
     }}
     .label {{
@@ -522,30 +551,49 @@ def _build_html(
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     }}
     .model-btn.active {{
-      border-color: rgba(255,255,255,0.18);
+      border-color: var(--border-strong);
       background: rgba(255,255,255,0.08);
       color: var(--txt);
     }}
     .panel {{
-      padding: 22px;
+      position: relative;
+      padding: 22px 24px;
       border: 1px solid var(--border);
-      border-radius: 22px;
-      background: var(--surface);
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.40);
+      border-radius: 26px;
+      background: linear-gradient(180deg, rgba(14,14,14,0.98) 0%, rgba(4,4,4,0.98) 100%);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
       margin-bottom: 16px;
+    }}
+    .panel::before {{
+      content: "";
+      display: block;
+      width: 52px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--txt);
+      box-shadow: 0 0 28px rgba(246,247,251,0.2);
+      margin-bottom: 18px;
     }}
     .panel.compact {{ padding: 16px 18px 12px; }}
     .section-title {{
-      font-size: 18px;
-      font-weight: 760;
-      margin-bottom: 4px;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 0;
+      letter-spacing: 0;
     }}
-    .section-title.small {{ font-size: 15px; }}
+    .section-title.small {{ font-size: 18px; }}
     .section-subtitle {{
       color: var(--txt2);
       font-size: 13px;
+      line-height: 1.5;
+      max-width: 760px;
+      margin-top: 8px;
       margin-bottom: 16px;
     }}
     .grid {{
@@ -556,32 +604,37 @@ def _build_html(
     .grid.two {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
     .cards {{
       display: grid;
-      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
       gap: 12px;
     }}
     .metric-card {{
-      min-height: 96px;
-      padding: 16px;
+      min-width: 180px;
+      min-height: 132px;
+      padding: 18px 20px;
       border-radius: 20px;
       border: 1px solid var(--border);
-      background: var(--card-alt);
+      background: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.008) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
     }}
     .metric-label {{
-      color: var(--txt2);
+      color: var(--txt3);
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .6px;
+      letter-spacing: .8px;
+      margin-bottom: 10px;
     }}
     .metric-value {{
-      margin-top: 10px;
-      font-size: 25px;
-      font-weight: 780;
+      font-size: 29px;
+      font-weight: 750;
+      line-height: 1.05;
+      letter-spacing: 0;
     }}
     .metric-sub {{
-      margin-top: 6px;
-      color: var(--txt3);
+      margin-top: 9px;
+      color: var(--txt2);
       font-size: 12px;
+      line-height: 1.45;
     }}
     .delta-grid {{
       display: grid;
@@ -613,6 +666,29 @@ def _build_html(
       text-transform: uppercase;
     }}
     td {{ color: var(--txt); font-size: 14px; }}
+    tbody tr:nth-child(odd) {{ background: rgba(255,255,255,0.018); }}
+    .leaderboard-table tbody tr:first-child {{
+      background: rgba(85, 224, 139, 0.06);
+    }}
+    .leaderboard-table tbody tr:first-child td:nth-child(4) {{
+      color: var(--green);
+      font-weight: 750;
+      font-size: 17px;
+    }}
+    .js-plotly-plot .plotly .modebar {{
+      opacity: 0.5;
+      background: rgba(14,14,14,0.9) !important;
+      border-radius: 12px;
+      padding: 4px 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }}
+    .js-plotly-plot .plotly .modebar:hover {{ opacity: 1; }}
+    .js-plotly-plot .plotly .modebar-btn {{
+      color: var(--txt2) !important;
+    }}
+    .js-plotly-plot .plotly .modebar-btn:hover {{
+      color: var(--blue) !important;
+    }}
     .pair-grid {{
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -720,6 +796,7 @@ def _build_html(
       txt: "{TXT}",
       txt2: "{TXT2}",
       txt3: "{TXT3}",
+      borderStrong: "{BORDER_STRONG}",
       cardAlt: "{CARD_ALT}",
       grid: "{GRID}",
       green: "{GREEN}",
@@ -757,10 +834,40 @@ def _build_html(
         plot_bgcolor: COLORS.cardAlt,
         font: {{family: "{FONT}", color: COLORS.txt, size: 12}},
         height,
-        margin: {{l: 56, r: 24, t: 24, b: 56}},
-        xaxis: {{gridcolor: COLORS.grid, zeroline: false, tickfont: {{color: COLORS.txt2}}}},
-        yaxis: {{gridcolor: COLORS.grid, zeroline: false, tickfont: {{color: COLORS.txt2}}}},
-        legend: {{orientation: "h", y: 1.1, x: 0}}
+        margin: {{l: 58, r: 28, t: 92, b: 46}},
+        hovermode: "x unified",
+        hoverlabel: {{
+          bgcolor: "#0B1420",
+          bordercolor: COLORS.borderStrong,
+          font: {{family: "{FONT}", color: COLORS.txt, size: 12}}
+        }},
+        xaxis: {{
+          gridcolor: COLORS.grid,
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          tickfont: {{color: COLORS.txt2, size: 11}},
+          titlefont: {{color: COLORS.txt2, size: 12}}
+        }},
+        yaxis: {{
+          gridcolor: COLORS.grid,
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          tickfont: {{color: COLORS.txt2, size: 11}},
+          titlefont: {{color: COLORS.txt2, size: 12}}
+        }},
+        legend: {{
+          bgcolor: "rgba(0,0,0,0)",
+          borderwidth: 0,
+          orientation: "h",
+          yanchor: "bottom",
+          y: 1.12,
+          xanchor: "left",
+          x: 0,
+          font: {{size: 10, color: COLORS.txt}},
+          itemsizing: "constant"
+        }}
       }};
     }}
 
@@ -792,7 +899,12 @@ def _build_html(
       const layout = baseLayout(420);
       layout.xaxis.title = "Реальные (МПа)";
       layout.yaxis.title = "Предсказанные (МПа)";
-      Plotly.react(divId, data, layout, {{displayModeBar: true, responsive: true}});
+      Plotly.react(divId, data, layout, {{
+        displayModeBar: true,
+        responsive: true,
+        scrollZoom: false,
+        modeBarButtonsToRemove: ["toImage", "sendDataToCloud", "select2d", "lasso2d"]
+      }});
       document.getElementById(`${{divId}}-title`);
       return `R2 = ${{row.R2.toFixed(4)}} | RMSE = ${{row.RMSE.toFixed(2)}} MPa`;
     }}
@@ -822,7 +934,12 @@ def _build_html(
       }};
       delete layout.xaxis;
       delete layout.yaxis;
-      Plotly.react("radar-chart", traces, layout, {{displayModeBar: true, responsive: true}});
+      Plotly.react("radar-chart", traces, layout, {{
+        displayModeBar: true,
+        responsive: true,
+        scrollZoom: false,
+        modeBarButtonsToRemove: ["toImage", "sendDataToCloud", "select2d", "lasso2d"]
+      }});
     }}
 
     function predictionTable() {{
