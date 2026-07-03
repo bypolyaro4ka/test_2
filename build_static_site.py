@@ -45,6 +45,11 @@ FONT = (
 )
 SHADOW = "0 28px 80px rgba(0, 0, 0, 0.40)"
 GRID = "rgba(255, 255, 255, 0.12)"
+NN_DISPLAY_NAMES = {
+    "nn_deep": "Архитектура 1",
+    "nn_regularized": "Архитектура 2",
+    "nn_simple": "Архитектура 3",
+}
 
 
 def _layout(fig: go.Figure, height: int = 400, showlegend: bool = True) -> go.Figure:
@@ -122,7 +127,8 @@ def _load_results() -> tuple[dict[str, dict], dict[str, list[float]], np.ndarray
         if path.name.endswith("_history.json"):
             histories[path.name.replace("_history.json", "")] = data
             continue
-        display_name = data.get("display_name", data["model"])
+        display_name = NN_DISPLAY_NAMES.get(data["model"], data.get("display_name", data["model"]))
+        data["display_name"] = display_name
         results[display_name] = data
 
     predictions = {}
@@ -444,11 +450,6 @@ def _build_static_charts(results: dict[str, dict], histories: dict, dataset: pd.
       {"".join(pair_cards)}
     </div>
 
-    <div class="panel">
-      <div class="section-title">Распределение: Прочность бетона</div>
-      <div class="section-subtitle">Полноширинная гистограмма целевой переменной.</div>
-      {_plot_html(_build_distribution(dataset, target, height=420))}
-    </div>
     """
 
 
