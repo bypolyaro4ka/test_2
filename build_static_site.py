@@ -46,9 +46,9 @@ FONT = (
 SHADOW = "0 28px 80px rgba(0, 0, 0, 0.40)"
 GRID = "rgba(255, 255, 255, 0.12)"
 NN_DISPLAY_NAMES = {
-    "nn_deep": "Архитектура 1",
+    "nn_deep": "Архитектура 3",
     "nn_regularized": "Архитектура 2",
-    "nn_simple": "Архитектура 3",
+    "nn_simple": "Архитектура 1",
 }
 
 
